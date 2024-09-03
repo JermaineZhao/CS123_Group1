@@ -2,10 +2,18 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
+import numpy as np
+import time
+from collections import deque
 
-JOINT_NAME = 'leg_front_r_3' ### CHANGE THIS (OPTIONAL)
-KP = 0 ### CHANGE THIS
-KD = 0 ### CHANGE THIS
+JOINT_NAME = 'leg_front_r_3'
+####
+####
+KP = 0 # YOUR KP VALUE
+KD = 0 # YOUR KD VALUE
+####
+####
+LOOP_RATE = 200  # Hz
 
 class JointStateSubscriber(Node):
 
@@ -15,7 +23,7 @@ class JointStateSubscriber(Node):
         self.subscription = self.create_subscription(
             JointState,
             '/joint_states',
-            self.listener_callback,
+            self.get_joint_info,
             10  # QoS profile history depth
         )
         self.subscription  # prevent unused variable warning
@@ -27,21 +35,51 @@ class JointStateSubscriber(Node):
             10
         )
         self.print_counter = 0
+        self.pd_torque = 0
+        self.joint_pos = 0
+        self.joint_vel = 0
+        self.target_joint_pos = 0
+        self.target_joint_vel = 0
+        # self.torque_history = deque(maxlen=DELAY)
 
-    def calculate_pd_torque(self, joint_pos, joint_vel, joint_pos_desired=0.0, joint_vel_desired=0.0):
-        ### CHANGE THIS
-        return
+        # Create a timer to run pd_loop at the specified frequency
+        self.create_timer(1.0 / LOOP_RATE, self.pd_loop)
 
-    def listener_callback(self, msg):
+    def get_target_joint_info(self):
+        ####
+        #### YOUR CODE HERE
+        ####
+
+        # target_joint_pos, target_joint_vel
+        return 0, 0 
+
+    def calculate_pd_torque(self, joint_pos, joint_vel, target_joint_pos, target_joint_vel):
+        ####
+        #### YOUR CODE HERE
+        ####
+        return 0
+
+    def print_info(self):
+        if self.print_counter == 0:
+            print(f"Pos: {self.joint_pos:.2f}, Target Pos: {self.target_joint_pos:.2f}, Vel: {self.joint_vel:.2f}, Target Vel: {self.target_joint_vel:.2f}, Tor: {self.pd_torque:.2f}")
+        self.print_counter += 1
+        self.print_counter %= 50
+
+    def get_joint_info(self, msg):
         joint_index = msg.name.index(JOINT_NAME)
         joint_pos = msg.position[joint_index]
         joint_vel = msg.velocity[joint_index]
-        if self.print_counter == 0:
-            print("Pos: ", joint_pos, "Vel: ", joint_vel)
-        self.print_counter += 1
-        self.print_counter %= 10
-        pd_torque = self.calculate_pd_torque(joint_pos, joint_vel, 1.0, 0.0)
-        self.publish_torque(pd_torque)
+
+        self.joint_pos = joint_pos
+        self.joint_vel = joint_vel
+    
+        return joint_pos, joint_vel
+
+    def pd_loop(self):
+        self.target_joint_pos, self.target_joint_vel = self.get_target_joint_info()
+        self.pd_torque = self.calculate_pd_torque(self.joint_pos, self.joint_vel, self.target_joint_pos, self.target_joint_vel)
+        self.print_info()
+        self.publish_torque(self.pd_torque)
 
     def publish_torque(self, torque=0.0):
         # Create a Float64MultiArray message with zero kp and kd values
@@ -63,6 +101,8 @@ def main(args=None):
     except KeyboardInterrupt:
         print("Ctrl-C detected")
         joint_state_subscriber.publish_torque(0.0)
+#    finally:
+#        joint_state_subscriber.publish_torque(0.0)
 
     # Clean up and shutdown
     joint_state_subscriber.destroy_node()
