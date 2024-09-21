@@ -13,7 +13,7 @@ controller_manager:
 
 forward_command_controller:
   ros__parameters:
-    joint: 'leg_front_r_3'
+    joint: 'leg_front_r_1'
     interface_names: ['effort', 'kp', 'kd']
 
 joint_state_broadcaster:

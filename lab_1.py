@@ -6,7 +6,7 @@ import numpy as np
 import time
 from collections import deque
 
-JOINT_NAME = 'leg_front_r_3'
+JOINT_NAME = 'leg_front_r_1'
 ####
 ####
 KP = 0 # YOUR KP VALUE
