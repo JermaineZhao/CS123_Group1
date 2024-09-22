@@ -14,6 +14,7 @@ KD = 0 # YOUR KD VALUE
 ####
 ####
 LOOP_RATE = 200  # Hz
+MAX_TORQUE = 3.0
 
 class JointStateSubscriber(Node):
 
@@ -84,6 +85,7 @@ class JointStateSubscriber(Node):
     def publish_torque(self, torque=0.0):
         # Create a Float64MultiArray message with zero kp and kd values
         command_msg = Float64MultiArray()
+        torque = np.clip(torque, -MAX_TORQUE, MAX_TORQUE)
         command_msg.data = [torque, 0.0, 0.0]  # Zero kp and kd values
 
         # Publish the message
