@@ -32,18 +32,19 @@ class CommandLinePublisher(Node):
         # Create a String message and publish it
         pass
         # Copy implementation from the command_line_publisher.py script
-
-    def transcribe_audio_with_whisper(self, audio_data, sample_rate=16000):
+            
+    def transcribe_audio_with_whisper(self, filename, sample_rate=16000):
         try:
-            # Use the numpy array directly in Whisper's model for transcription
             print("Transcribing audio using Whisper model...")
-            audio_float = audio_data.astype(np.float32) / 32768.0  # Convert int16 to float32
-            response = self.model.transcribe(audio_float)
-            self.get_logger().info(f"Transcription response: {response['text']}")
-            return response['text']
+            audio_file = open(filename, "rb")
+            transcription = client.audio.transcriptions.create(
+                model="whisper-1", file=audio_file, response_format="text")
+            self.get_logger().info(f"Transcription response: {transcription}")
+            return transcription
         except Exception as e:
             print(f"Error during transcription: {e}")
             return None
+
 
 
 def record_audio(duration=5, sample_rate=16000):
@@ -73,30 +74,36 @@ def main(args=None):
     # Set up the stream and audio processing
     print("Listening for speech every 0.9 seconds. Say 'exit' to stop.")
 
+    command_publisher.get_logger().info("Starting recording.")
+
     try:
-        # Continuously capture audio and process it
-        while rclpy.ok():
-            # Record 0.9 seconds of audio
-            dur = 0.9 # TODO: Experiment with different durations
-            audio_data = record_audio(duration=dur)
+        audio_data = record_audio(duration=5.0)
+        # Save the recorded audio to a WAV file
+        wav_io = audio_to_wav(audio_data)
+        filename = '/home/pi/pupper_llm/pupper_llm/simple_scripts/test_audio.wav'
+        with open(filename, 'wb') as f:
+            f.write(wav_io.read())
+        command_publisher.get_logger().info("Audio saved to test_audio.wav")
 
-            # Transcribe audio using Whisper API
-            user_input = command_publisher.transcribe_audio_with_whisper(audio_data)
+        #Transcribe audio using Whisper API
+        t1 = time.time()
+        user_input = command_publisher.transcribe_audio_with_whisper(filename)
+        t2 = time.time()
+        
+        command_publisher.get_logger().info(f"Time taken: {t2 - t1}")
+        # If the user said 'exit', stop the loop
+        if user_input and user_input.lower() == 'exit':
+            print("Exiting the publisher.")
 
-            # If the user said 'exit', stop the loop
-            if user_input and user_input.lower() == 'exit':
-                print("Exiting the publisher.")
-                break
+        # Publish the recognized text
+        if user_input:
+            command_publisher.publish_message(user_input)
 
-            # Publish the recognized text
-            if user_input:
-                command_publisher.publish_message(user_input)
+        # Allow ROS2 to process the message
+        rclpy.spin_once(command_publisher, timeout_sec=0.1)
 
-            # Allow ROS2 to process the message
-            rclpy.spin_once(command_publisher, timeout_sec=0.1)
-
-            # Delay for 0.9 seconds
-            time.sleep(dur)
+        # Delay for 0.9 seconds
+        time.sleep(0.9)
 
     except KeyboardInterrupt:
         print("Interrupted by user. Exiting...")
