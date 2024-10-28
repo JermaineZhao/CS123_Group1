@@ -11,6 +11,7 @@ class KarelPupper:
         rclpy.init()
 
     def __init__(self):
+        # rclpy.init()
         self.node = Node('karel_node')
         self.publisher = self.node.create_publisher(Twist, 'cmd_vel', 10)
 
