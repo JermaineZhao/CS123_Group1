@@ -5,12 +5,13 @@ from std_msgs.msg import Float64MultiArray
 import numpy as np
 import time
 from collections import deque
+import math
 
 JOINT_NAME = 'leg_front_r_1'
 ####
 ####
-KP = 0 # YOUR KP VALUE
-KD = 0 # YOUR KD VALUE
+KP = 1.0 # YOUR KP VALUE
+KD = 0.1 # YOUR KD VALUE
 ####
 ####
 LOOP_RATE = 200  # Hz
@@ -20,7 +21,7 @@ class JointStateSubscriber(Node):
 
     def __init__(self):
         super().__init__('joint_state_subscriber')
-        # Create a subscriber to the /joint_states topic
+        # Create a subscriber to the / joint_states topic
         self.subscription = self.create_subscription(
             JointState,
             '/joint_states',
@@ -43,22 +44,72 @@ class JointStateSubscriber(Node):
         self.target_joint_vel = 0
         # self.torque_history = deque(maxlen=DELAY)
 
+        delay_seconds = 0.1
+        control_freq = 200
+        # In your initialization:
+        self.delay_buffer_size = int(delay_seconds * control_freq)
+        self.angle_buffer = deque(maxlen=self.delay_buffer_size)
+        self.velocity_buffer = deque(maxlen=self.delay_buffer_size)
+
+        
+
         # Create a timer to run pd_loop at the specified frequency
         self.create_timer(1.0 / LOOP_RATE, self.pd_loop)
 
     def get_target_joint_info(self):
-        ####
-        #### YOUR CODE HERE
-        ####
+        # YOUR CODE HERE
 
-        # target_joint_pos, target_joint_vel
-        return 0, 0 
+        # Bang-bang: oscillate back and forth between -0.5 and 0.5 (rads) every 3 seconds
+        # --- bang-bang starts here ---
+        # t = self.get_clock().now().nanoseconds / 1e9  # Current time stamp in seconds
+        # period = 30
+
+        # if int(t // period) % 2 == 0:
+        #     target_joint_pos = 5
+        # else:
+        #     target_joint_pos = -5
+
+        # target_joint_vel = 0    # We don't need vel for bang-bang
+        # --- bang-bang ends here ---
+
+        # PD control (sinusoidal)
+        # --- PD starts here ---
+        t = self.get_clock().now().nanoseconds / 1e9  # Current time stamp in seconds
+        
+        amplitude = math.pi / 4     # Rad
+        frequency = 0.2
+        omega = 2 * math.pi * frequency
+
+        target_joint_pos = amplitude * math.sin(omega * t)
+        target_joint_vel = amplitude * omega * math.cos(omega * t)
+
+        # --- PD ends here ---
+
+        return target_joint_pos, target_joint_vel
 
     def calculate_pd_torque(self, joint_pos, joint_vel, target_joint_pos, target_joint_vel):
-        ####
-        #### YOUR CODE HERE
-        ####
-        return 0
+        # YOUR CODE HERE
+
+        # --- bang-bang starts here ---
+        # position_err = target_joint_pos - joint_pos
+        # threshold = 0.01    # rads
+
+        # if position_err > threshold:
+        #     torque = MAX_TORQUE
+        # elif position_err < -threshold:
+        #     torque = -MAX_TORQUE
+        # else:
+        #     torque = 0.0
+        # --- bang-bang ends here ---
+
+        # Add delay in your control loop:
+        # self.angle_buffer.append(joint_pos)
+        # self.velocity_buffer.append(joint_vel)
+        # joint_pos = self.angle_buffer[0]
+        # joint_vel = self.velocity_buffer[0]
+
+        torque = KP * (target_joint_pos - joint_pos) + KD * (target_joint_vel - joint_vel)
+        return torque
 
     def print_info(self):
         if self.print_counter == 0:
