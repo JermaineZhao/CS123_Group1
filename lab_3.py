@@ -52,9 +52,64 @@ class InverseKinematics(Node):
 
     def forward_kinematics(self, theta1, theta2, theta3):
         ################################################################################################
-        # TODO: paste lab 2 forward kinematics here
+        def rotation_x(angle):
+            # rotation about the x-axis implemented for you
+            return np.array([
+                [1, 0, 0, 0],
+                [0, np.cos(angle), -np.sin(angle), 0],
+                [0, np.sin(angle), np.cos(angle), 0],
+                [0, 0, 0, 1]
+            ])
+
+        def rotation_y(angle):
+            ## TODO: Implement the rotation matrix about the y-axis
+            return np.array([
+                [np.cos(angle), 0, np.sin(angle), 0],
+                [0, 1, 0, 0],
+                [-np.sin(angle), 0, np.cos(angle), 0],
+                [0, 0, 0, 1]
+            ])
+        
+        def rotation_z(angle):
+            ## TODO: Implement the rotation matrix about the z-axis
+            return np.array([
+                [np.cos(angle), -np.sin(angle), 0, 0],
+                [np.sin(angle), np.cos(angle), 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1]
+            ])
+
+        def translation(x, y, z):
+            ## TODO: Implement the translation matrix
+            return np.array([
+                [1, 0, 0, x],
+                [0, 1, 0, y],
+                [0, 0, 1, z],
+                [0, 0, 0, 1]
+            ])
+            
+        # T_0_1 (base_link to leg_front_r_1)
+        T_0_1 = translation(0.07500, -0.0445, 0) @ rotation_x(1.57080) @ rotation_z(theta1)
+
+        # T_1_2 (leg_front_r_1 to leg_front_r_2)
+        ## TODO: Implement the transformation matrix from leg_front_r_1 to leg_front_r_2
+        T_1_2 = translation(0, 0, 0.039) @ rotation_y(-np.pi/2) @ rotation_z(theta2)
+
+        # T_2_3 (leg_front_r_2 to leg_front_r_3)
+        ## TODO: Implement the transformation matrix from leg_front_r_2 to leg_front_r_3
+        T_2_3 = translation(0, -0.0494, 0.0685) @ rotation_y(np.pi/2) @ rotation_z(theta3)
+
+        # T_3_ee (leg_front_r_3 to end-effector)
+        T_3_ee = translation(0.06231, -0.06216, 0.018)
+
+        # TODO: Compute the final transformation. T_0_ee is a concatenation of the previous transformation matrices
+        T_0_ee = T_0_1 @ T_1_2 @ T_2_3 @ T_3_ee
+
+        # TODO: Extract the end-effector position. The end effector position is a 3x3 matrix (not in homogenous coordinates)
+        end_effector_position = T_0_ee[:3, -1]
+
+        return end_effector_position
         ################################################################################################
-        return
 
     def inverse_kinematics(self, target_ee, initial_guess=[0, 0, 0]):
         def cost_function(theta):
@@ -63,24 +118,41 @@ class InverseKinematics(Node):
             ################################################################################################
             # TODO: Implement the cost function
             # HINT: You can use the * notation on a list to "unpack" a list
+            end_effector_position = self.forward_kinematics(*theta)
+            l1 = abs(end_effector_position - target_ee)
+            cost = np.sum(l1 ** 2)
+
             ################################################################################################
-            return None, None
+            return cost, l1
 
         def gradient(theta, epsilon=1e-3):
+            cost_1, l1_1 = cost_function(theta + epsilon)
+            cost_2, l1_2 = cost_function(theta - epsilon)
+
+            return (cost_1 - cost_2) / (2 * epsilon)
+
+            
             # Compute the gradient of the cost function using finite differences
             ################################################################################################
             # TODO: Implement the gradient computation
             ################################################################################################
-            return
 
         theta = np.array(initial_guess)
-        learning_rate = None # TODO: Set the learning rate
-        max_iterations = None # TODO: Set the maximum number of iterations
-        tolerance = None # TODO: Set the tolerance for the L1 norm of the error
+        learning_rate = 10 # TODO: Set the learning rate
+        max_iterations = 30 # TODO: Set the maximum number of iterations
+        tolerance = .01 # TODO: Set the tolerance for the L1 norm of the error
 
         cost_l = []
-        for _ in range(max_iterations):
+        for i in range(max_iterations):
             grad = gradient(theta)
+            for j in range(len(theta)):
+                theta[j] += grad * learning_rate
+            cur_cost, l1 = cost_function(theta)
+            cost_l.append(cur_cost)
+            val = np.mean(l1)
+            if val < tolerance:
+                break 
+                    
 
             # Update the theta (parameters) using the gradient and the learning rate
             ################################################################################################
@@ -98,6 +170,15 @@ class InverseKinematics(Node):
         # based on the current time t
         ################################################################################################
         # TODO: Implement the interpolation function
+
+        sec = t % 3
+        if sec < 2 and sec < 3:
+            np.interp(sec, [2, 0], [self.ee_triangle_positions[2], self.ee_triangle_positions[0]])
+        elif sec < 1 and sec < 2:
+            np.interp(sec, [1, 2], [self.ee_triangle_positions[1], self.ee_triangle_positions[2]])
+        else:
+            np.interp(sec, [0, 1], [self.ee_triangle_positions[0], self.ee_triangle_positions[1]])
+
         ################################################################################################
         return
 
