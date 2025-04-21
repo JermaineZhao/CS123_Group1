@@ -3,10 +3,12 @@ from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
 import numpy as np
+from scipy.optimize import minimize
+
 np.set_printoptions(precision=3, suppress=True)
 
-Kp = 3
-Kd = 0.1
+Kp = 0.5
+Kd = 0.01
 
 class InverseKinematics(Node):
 
@@ -26,7 +28,7 @@ class InverseKinematics(Node):
         )
 
         self.pd_timer_period = 1.0 / 200  # 200 Hz
-        self.ik_timer_period = 1.0 / 20   # 10 Hz
+        self.ik_timer_period = 1.0 / 60   # 10 Hz
         self.pd_timer = self.create_timer(self.pd_timer_period, self.pd_timer_callback)
         self.ik_timer = self.create_timer(self.ik_timer_period, self.ik_timer_callback)
 
@@ -111,7 +113,7 @@ class InverseKinematics(Node):
         return end_effector_position
         ################################################################################################
 
-    def inverse_kinematics(self, target_ee, initial_guess=[0, 0, 0]):
+    def inverse_kinematics(self, target_ee, initial_guess=[0,0,0]):
         def cost_function(theta):
             # Compute the cost function and the L1 norm of the error
             # return the cost and the L1 norm of the error
@@ -119,39 +121,47 @@ class InverseKinematics(Node):
             # TODO: Implement the cost function
             # HINT: You can use the * notation on a list to "unpack" a list
             end_effector_position = self.forward_kinematics(*theta)
-            l1 = abs(end_effector_position - target_ee)
-            cost = np.sum(l1 ** 2)
+            l1 = np.abs(end_effector_position - target_ee)
+            cost = np.sum(np.square(l1))
 
             ################################################################################################
             return cost, l1
 
         def gradient(theta, epsilon=1e-3):
-            cost_1, l1_1 = cost_function(theta + epsilon)
-            cost_2, l1_2 = cost_function(theta - epsilon)
-
-            return (cost_1 - cost_2) / (2 * epsilon)
-
+            grad = np.zeros_like(theta)
+            for i in range(len(theta)):
+                theta_eps_plus = np.copy(theta)
+                theta_eps_minus = np.copy(theta)
+                theta_eps_plus[i] += epsilon
+                theta_eps_minus[i] -= epsilon
+                cost_plus, _ = cost_function(theta_eps_plus)
+                cost_minus, _ = cost_function(theta_eps_minus)
+                grad[i] = (cost_plus - cost_minus) / (2*epsilon)
+            return grad
             
             # Compute the gradient of the cost function using finite differences
             ################################################################################################
             # TODO: Implement the gradient computation
             ################################################################################################
-
         theta = np.array(initial_guess)
-        learning_rate = 10 # TODO: Set the learning rate
-        max_iterations = 30 # TODO: Set the maximum number of iterations
-        tolerance = .01 # TODO: Set the tolerance for the L1 norm of the error
+        learning_rate = 5.5# TODO: Set the learning rate, 5.5
+        max_iterations = 20 # TODO: Set the maximum number of iterations
+        tolerance = 0.001 # TODO: Set the tolerance for the L1 norm of the error
 
         cost_l = []
-        for i in range(max_iterations):
+        for _ in range(max_iterations):
             grad = gradient(theta)
-            for j in range(len(theta)):
-                theta[j] += grad * learning_rate
+            # for j in range(len(theta)):
+            theta -= grad * learning_rate
             cur_cost, l1 = cost_function(theta)
             cost_l.append(cur_cost)
             val = np.mean(l1)
             if val < tolerance:
+                print("YESSS")
                 break 
+        print(theta)
+            
+        # print("touch down")
                     
 
             # Update the theta (parameters) using the gradient and the learning rate
@@ -160,6 +170,29 @@ class InverseKinematics(Node):
             # to determine if IK has converged
             # TODO (BONUS): Implement the (quasi-)Newton's method instead of finite differences for faster convergence
             ################################################################################################
+        
+        # # BONUS Method
+        # def cost(theta):
+        #     ee_pos = self.forward_kinematics(*theta)
+        #     return np.sum((ee_pos - target_ee) ** 2)  # L2 norm squared
+
+        # # Use the BFGS optimization method
+        # result = minimize(
+        #     cost,
+        #     x0=np.array(initial_guess),
+        #     method='BFGS',
+        #     options={
+        #         'gtol': 1e-4,
+        #         'disp': False,
+        #         'maxiter': 100
+        #     }
+        # )
+
+        # if not result.success:
+        #     self.get_logger().warn(f"IK did not converge: {result.message}")
+
+        # return result.x  # optimized joint angles
+
 
         # print(f'Cost: {cost_l}') # Use to debug to see if you cost function converges within max_iterations
 
@@ -171,36 +204,55 @@ class InverseKinematics(Node):
         ################################################################################################
         # TODO: Implement the interpolation function
 
-        sec = t % 3
-        if sec < 2 and sec < 3:
-            np.interp(sec, [2, 0], [self.ee_triangle_positions[2], self.ee_triangle_positions[0]])
-        elif sec < 1 and sec < 2:
-            np.interp(sec, [1, 2], [self.ee_triangle_positions[1], self.ee_triangle_positions[2]])
+        A, B, C = self.ee_triangle_positions
+        phase = t % 3
+        if phase < 1.0:
+            alpha = phase
+            target = (1 - alpha) * A + alpha * B
+        elif phase < 2.0:
+            alpha = phase - 1.0
+            target = (1 - alpha) * B + alpha * C
         else:
-            np.interp(sec, [0, 1], [self.ee_triangle_positions[0], self.ee_triangle_positions[1]])
+            alpha = phase - 2.0
+            target = (1 - alpha) * C + alpha * A
+        
+        print(t)
+
+        return target
 
         ################################################################################################
-        return
 
     def ik_timer_callback(self):
         if self.joint_positions is not None:
             target_ee = self.interpolate_triangle(self.t)
             self.target_joint_positions = self.inverse_kinematics(target_ee, self.joint_positions)
             current_ee = self.forward_kinematics(*self.joint_positions)
+            # print(f"Solving IK for phase: {self.t % 3:.2f}, Target EE: {target_ee}")
+
 
             # update the current time for the triangle interpolation
             ################################################################################################
             # TODO: Implement the time update
+            self.t += self.ik_timer_period * 5
             ################################################################################################
             
-            self.get_logger().info(f'Target EE: {target_ee}, Current EE: {current_ee}, Target Angles: {self.target_joint_positions}, Target Angles to EE: {self.forward_kinematics(*self.target_joint_positions)}, Current Angles: {self.joint_positions}')
+            # self.get_logger().info(f'Target EE: {target_ee}, Current EE: {current_ee}, Target Angles: {self.target_joint_positions}, Target Angles to EE: {self.forward_kinematics(*self.target_joint_positions)}, Current Angles: {self.joint_positions}')
 
     def pd_timer_callback(self):
         if self.target_joint_positions is not None:
+            error = self.target_joint_positions - self.joint_positions
+            d_error = -self.joint_velocities
+
+            command = Kp * error + Kd * d_error
 
             command_msg = Float64MultiArray()
-            command_msg.data = self.target_joint_positions.tolist()
+            command_msg.data = command.tolist()
             self.command_publisher.publish(command_msg)
+        # if self.target_joint_positions is not None:
+
+        #     command_msg = Float64MultiArray()
+        #     command_msg.data = self.target_joint_positions.tolist()
+        #     self.command_publisher.publish(command_msg)
 
 def main():
     rclpy.init()
