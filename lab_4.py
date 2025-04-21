@@ -9,25 +9,45 @@ def rotation_x(angle):
     ################################################################################################
     # TODO: [already done] paste lab 2 forward kinematics here
     ################################################################################################
-    return
+    return np.array([
+                [1, 0, 0, 0],
+                [0, np.cos(angle), -np.sin(angle), 0],
+                [0, np.sin(angle), np.cos(angle), 0],
+                [0, 0, 0, 1]
+            ])
 
 def rotation_y(angle):
     ################################################################################################
     # TODO: [already done] paste lab 2 forward kinematics here
     ################################################################################################
-    return
+    return np.array([
+                [np.cos(angle), 0, np.sin(angle), 0],
+                [0, 1, 0, 0],
+                [-np.sin(angle), 0, np.cos(angle), 0],
+                [0, 0, 0, 1]
+            ])
 
 def rotation_z(angle):
     ################################################################################################
     # TODO: [already done] paste lab 2 forward kinematics here
     ################################################################################################
-    return
+    return np.array([
+                [np.cos(angle), -np.sin(angle), 0, 0],
+                [np.sin(angle), np.cos(angle), 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1]
+            ])
 
 def translation(x, y, z):
     ################################################################################################
     # TODO: [already done] paste lab 2 forward kinematics here
     ################################################################################################
-    return
+    return np.array([
+                [1, 0, 0, x],
+                [0, 1, 0, y],
+                [0, 0, 1, z],
+                [0, 0, 0, 1]
+            ])
 
 class InverseKinematics(Node):
 
@@ -152,26 +172,51 @@ class InverseKinematics(Node):
             ################################################################################################
             # TODO: [already done] paste lab 3 inverse kinematics here
             ################################################################################################
-            return None, None
+            end_effector_position = self.forward_kinematics(*theta)
+            l1 = np.abs(end_effector_position - target_ee)
+            cost = np.sum(np.square(l1))
+            return cost, l1
 
         def gradient(theta, epsilon=1e-3):
             grad = np.zeros(3)
             ################################################################################################
             # TODO: [already done] paste lab 3 inverse kinematics here
             ################################################################################################
+            grad = np.zeros_like(theta)
+            for i in range(len(theta)):
+                theta_eps_plus = np.copy(theta)
+                theta_eps_minus = np.copy(theta)
+                theta_eps_plus[i] += epsilon
+                theta_eps_minus[i] -= epsilon
+                cost_plus, _ = cost_function(theta_eps_plus)
+                cost_minus, _ = cost_function(theta_eps_minus)
+                grad[i] = (cost_plus - cost_minus) / (2*epsilon)
             return grad
 
         theta = np.array(initial_guess)
-        learning_rate = None # TODO:[already done] paste lab 3 inverse kinematics here
-        max_iterations = None # TODO: [already done] paste lab 3 inverse kinematics here
-        tolerance = None # TODO: [already done] paste lab 3 inverse kinematics here
+        # learning_rate = None # TODO:[already done] paste lab 3 inverse kinematics here
+        # max_iterations = None # TODO: [already done] paste lab 3 inverse kinematics here
+        # tolerance = None # TODO: [already done] paste lab 3 inverse kinematics here
+
+        learning_rate = 5.5# TODO: Set the learning rate, 5.5
+        max_iterations = 20 # TODO: Set the maximum number of iterations
+        tolerance = 0.001 # TODO: Set the tolerance for the L1 norm of the error
 
         cost_l = []
         for _ in range(max_iterations):
             ################################################################################################
             # TODO: [already done] paste lab 3 inverse kinematics here
             ################################################################################################
-            continue
+            grad = gradient(theta)
+            # for j in range(len(theta)):
+            theta -= grad * learning_rate
+            cur_cost, l1 = cost_function(theta)
+            cost_l.append(cur_cost)
+            val = np.mean(l1)
+            if val < tolerance:
+                print("YESSS")
+                break 
+        print(theta)
 
         return theta
 
