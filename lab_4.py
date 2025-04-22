@@ -283,7 +283,7 @@ class InverseKinematics(Node):
             alpha = phase - 5.0
             target = (1 - alpha) * F + alpha * A
         
-        print(t)
+        # print(t)
 
         return target
 
