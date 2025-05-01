@@ -72,12 +72,26 @@ class InverseKinematics(Node):
         self.counter = 0
 
         # Trotting gate positions, already implemented
+        # FAST
+        
         touch_down_position = np.array([0.05, 0.0, -0.14])
         stand_position_1 = np.array([0.025, 0.0, -0.14])
         stand_position_2 = np.array([0.0, 0.0, -0.14])
         stand_position_3 = np.array([-0.025, 0.0, -0.14])
         liftoff_position = np.array([-0.05, 0.0, -0.14])
         mid_swing_position = np.array([0.0, 0.0, -0.05])
+        
+
+        # SLOW
+        '''
+        touch_down_position = np.array([0.005, 0.0, -0.14])
+        stand_position_1 = np.array([0.0025, 0.0, -0.14])
+        stand_position_2 = np.array([0.0, 0.0, -0.14])
+        stand_position_3 = np.array([-0.0025, 0.0, -0.14])
+        liftoff_position = np.array([-0.005, 0.0, -0.14])
+        mid_swing_position = np.array([0.0, 0.0, -0.05])
+        '''
+        
         
         ## trotting
         # TODO: Implement each leg's trajectory in the trotting gait.
@@ -134,12 +148,12 @@ class InverseKinematics(Node):
         self.fk_functions = [self.fr_leg_fk, self.fl_leg_fk, self.br_leg_fk, self.bl_leg_fk]
 
         self.target_joint_positions_cache, self.target_ee_cache = self.cache_target_joint_positions()
-        print(f'shape of target_joint_positions_cache: {self.target_joint_positions_cache.shape}')
-        print(f'shape of target_ee_cache: {self.target_ee_cache.shape}')
+        #print(f'shape of target_joint_positions_cache: {self.target_joint_positions_cache.shape}')
+        #print(f'shape of target_ee_cache: {self.target_ee_cache.shape}')
 
 
         self.pd_timer_period = 1.0 / 200  # 200 Hz
-        self.ik_timer_period = 1.0 / 100   # 10 Hz
+        self.ik_timer_period = 1.0 / 60   # 10 Hz
         self.pd_timer = self.create_timer(self.pd_timer_period, self.pd_timer_callback)
         self.ik_timer = self.create_timer(self.ik_timer_period, self.ik_timer_callback)
 
@@ -157,10 +171,17 @@ class InverseKinematics(Node):
         ################################################################################################
         # TODO: implement forward kinematics here
         ################################################################################################
+<<<<<<< HEAD
         T_RF_0_1 = translation(0.07500, 0.08350, 0) @ rotation_x(1.57080) @ rotation_z(theta[0])
         T_RF_1_2 = rotation_y(-1.57080) @ rotation_z(theta[1])
         T_RF_2_3 = translation(0, -0.04940, 0.06850) @ rotation_y(1.57080) @ rotation_z(theta[2])
         T_RF_3_ee = translation(0.06231, -0.06216, 0.01800)
+=======
+        T_RF_0_1 = translation(0.07500, 0.08350, 0) @ rotation_x(1.57080) @ rotation_z(-theta[0])
+        T_RF_1_2 = rotation_y(-1.57080) @ rotation_z(theta[1])
+        T_RF_2_3 = translation(0, -0.04940, 0.06850) @ rotation_y(1.57080) @ rotation_z(-theta[2])
+        T_RF_3_ee = translation(0.06231, -0.06216, -0.01800)
+>>>>>>> 5bb41cd (Code for Lab 4)
         T_RF_0_ee = T_RF_0_1 @ T_RF_1_2 @ T_RF_2_3 @ T_RF_3_ee
         return T_RF_0_ee[:3, 3]
     
@@ -180,10 +201,17 @@ class InverseKinematics(Node):
         ################################################################################################
         # TODO: implement forward kinematics here
         ################################################################################################
+<<<<<<< HEAD
         T_RF_0_1 = translation(-0.07500, 0.08350, 0) @ rotation_x(1.57080) @ rotation_z(theta[0])
         T_RF_1_2 = rotation_y(-1.57080) @ rotation_z(theta[1])
         T_RF_2_3 = translation(0, -0.04940, 0.06850) @ rotation_y(1.57080) @ rotation_z(theta[2])
         T_RF_3_ee = translation(0.06231, -0.06216, 0.01800)
+=======
+        T_RF_0_1 = translation(-0.07500, 0.08350, 0) @ rotation_x(1.57080) @ rotation_z(-theta[0])
+        T_RF_1_2 = rotation_y(-1.57080) @ rotation_z(theta[1])
+        T_RF_2_3 = translation(0, -0.04940, 0.06850) @ rotation_y(1.57080) @ rotation_z(-theta[2])
+        T_RF_3_ee = translation(0.06231, -0.06216, -0.01800)
+>>>>>>> 5bb41cd (Code for Lab 4)
         T_RF_0_ee = T_RF_0_1 @ T_RF_1_2 @ T_RF_2_3 @ T_RF_3_ee
         return T_RF_0_ee[:3, 3]
 
@@ -207,8 +235,13 @@ class InverseKinematics(Node):
             # current_position = leg_forward_kinematics(theta)
             ################################################################################################
             # TODO: [already done] paste lab 3 inverse kinematics here
+<<<<<<< HEAD
             end_effector_position = self.forward_kinematics(*theta)
             l1 = np.abs(end_effector_position - target_ee)
+=======
+            #end_effector_position = self.forward_kinematics(*theta)
+            l1 = np.abs(current_position - target_ee)
+>>>>>>> 5bb41cd (Code for Lab 4)
             cost = np.sum(np.square(l1))
             return cost, l1
             
@@ -219,7 +252,11 @@ class InverseKinematics(Node):
             ################################################################################################
             # TODO: [already done] paste lab 3 inverse kinematics here
             ################################################################################################
+<<<<<<< HEAD
             grad = np.zeros_like(theta)
+=======
+            # grad = np.zeros_like(theta)
+>>>>>>> 5bb41cd (Code for Lab 4)
             for i in range(len(theta)):
                 theta_eps_plus = np.copy(theta)
                 theta_eps_minus = np.copy(theta)
@@ -230,26 +267,50 @@ class InverseKinematics(Node):
                 grad[i] = (cost_plus - cost_minus) / (2*epsilon)
             return grad
 
+<<<<<<< HEAD
         theta = np.array(initial_guess)
         learning_rate = 5.5 # TODO: Set the learning rate, 5.5
         max_iterations = 20 # TODO: Set the maximum number of iterations
+=======
+        # initial_guess=[0.1, 0.1, 0.1]
+        theta = np.array(initial_guess).astype(np.float64)
+        #print("theta is:", theta)
+        learning_rate = 10 # TODO:  the learning rate, 5.5
+        max_iterations = 50 # TODO: Set the maximum number of iterations
+>>>>>>> 5bb41cd (Code for Lab 4)
         tolerance = 0.001 # TODO: Set the tolerance for the L1 norm of the error
 
         cost_l = []
-        for _ in range(max_iterations):
+        flag = False
+        while(not flag):
+        # for _ in range(max_iterations):
             ################################################################################################
             # TODO: [already done] paste lab 3 inverse kinematics here
             ################################################################################################
             grad = gradient(theta)
             # for j in range(len(theta)):
+<<<<<<< HEAD
+=======
+            # print(theta)
+            # print(grad)
+            # print(type(grad))
+            # print(grad)
+>>>>>>> 5bb41cd (Code for Lab 4)
             theta -= grad * learning_rate
             cur_cost, l1 = cost_function(theta)
             cost_l.append(cur_cost)
             val = np.mean(l1)
             if val < tolerance:
+<<<<<<< HEAD
                 print("YESSS")
                 break 
         print(theta)
+=======
+                flag = True
+                #print("YESSS")
+                break 
+        # print(theta)
+>>>>>>> 5bb41cd (Code for Lab 4)
 
         return theta
 
@@ -261,6 +322,7 @@ class InverseKinematics(Node):
         ################################################################################################
         ee_triangle_position = self.ee_triangle_positions[leg_index]
 
+<<<<<<< HEAD
         
         A, B, C, D, E, F = ee_triangle_position
         phase = t % 6
@@ -286,12 +348,45 @@ class InverseKinematics(Node):
         # print(t)
 
         return target
+=======
+        '''
+        A, B, C, D, E, F = ee_triangle_position
+        phase = t % 1.
+        if phase < 1/6:
+            alpha = phase
+            target = (1 - alpha) * A + alpha * B
+        elif phase < 1/3:
+            alpha = phase - 1/6
+            target = (1 - alpha) * B + alpha * C
+        elif phase < 1/2:
+            alpha = phase - 2/6
+            target = (1 - alpha) * C + alpha * D
+        elif phase < 2/3:
+            alpha = phase - 3/6
+            target = (1 - alpha) * D + alpha * E
+        elif phase < 5/6:
+            alpha = phase - 4/6
+            target = (1 - alpha) * E + alpha * F
+        else:
+            alpha = phase - 5/6
+            target = (1 - alpha) * F + alpha * A
+        
+        # print(t)
+        return target
+        '''
+        
+        t = t*12%12.
+        t_idx = int(t)
+        t_res = t - t_idx
+        return ee_triangle_position[t_idx % 6] + t_res * (ee_triangle_position[(t_idx + 1) % 6] - ee_triangle_position[t_idx % 6])
+>>>>>>> 5bb41cd (Code for Lab 4)
 
     def cache_target_joint_positions(self):
         # Calculate and store the target joint positions for a cycle and all 4 legs
         target_joint_positions_cache = []
         target_ee_cache = []
         for leg_index in range(4):
+            print(f"Leg: {leg_index}")
             target_joint_positions_cache.append([])
             target_ee_cache.append([])
             target_joint_positions = [0] * 3
