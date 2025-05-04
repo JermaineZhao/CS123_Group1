@@ -74,7 +74,8 @@ class HailoDetectionNode(Node):
         video_h, video_w = frame.shape[:2]
 
         # Rotate 180 degrees
-        frame = cv2.rotate(frame, cv2.ROTATE_180)
+        # ONLY UNCOMMENT IF YOUR CAMERA IS UPSIDE DOWN
+        # frame = cv2.rotate(frame, cv2.ROTATE_180)
 
         # Swap r and b channels, then multiply r by 0.5 to fix the colors
         frame = frame[:, :, ::-1]
@@ -165,11 +166,10 @@ class HailoDetectionNode(Node):
             annotated_msg.format = "jpeg"
             annotated_msg.data = jpg_buffer.tobytes()
         else:
-            return
-            # _, jpg_buffer = cv2.imencode('.jpg', frame)
-            # annotated_msg = CompressedImage()
-            # annotated_msg.format = "jpeg"
-            # annotated_msg.data = jpg_buffer.tobytes()
+            _, jpg_buffer = cv2.imencode('.jpg', frame)
+            annotated_msg = CompressedImage()
+            annotated_msg.format = "jpeg"
+            annotated_msg.data = jpg_buffer.tobytes()
         annotated_msg.header = msg.header
         self.annotated_pub.publish(annotated_msg)
 
