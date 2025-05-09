@@ -26,7 +26,7 @@ class GPT4ConversationNode(Node):
             10
         )
 
-        self.get_logger().info('GPT-4 conversation node started and waiting for queries...')
+        self.get_logger().info('GPT-4o conversation node started and waiting for queries...')
 
         # Initialize the text-to-speech engine
         self.tts_engine = pyttsx3.init()
@@ -48,9 +48,9 @@ class GPT4ConversationNode(Node):
 
     def get_gpt4_response(self, query):
         try:
-            # Making the API call to GPT-4 using OpenAI's Python client
+            # Making the API call to GPT-4o using OpenAI's Python client
             prompt = "TODO"
-            response = client.chat.completions.create(model="gpt-4",  # Model identifier, assuming GPT-4 is used
+            response = client.chat.completions.create(model="gpt-4o",  # Model identifier, assuming GPT-4o is used
             messages=[
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": query}
@@ -62,7 +62,7 @@ class GPT4ConversationNode(Node):
             return gpt4_response
 
         except Exception as e:
-            self.get_logger().error(f"Error calling GPT-4 API: {str(e)}")
+            self.get_logger().error(f"Error calling GPT-4o API: {str(e)}")
             return "Sorry, I couldn't process your request due to an error."
 
     def play_response(self, response):
@@ -77,7 +77,7 @@ class GPT4ConversationNode(Node):
         # Convert the response to lowercase to handle case-insensitivity
         response = response.lower()
         self.get_logger().info(f"Response: {response}")
-        # TODO: Implement the robot command execution logic, in a large if-else statement. Your conditionals should be set based on the expected commands from GPT-4, and the corresponding methods should be called on the KarelPupper object.
+        # TODO: Implement the robot command execution logic, in a large if-else statement. Your conditionals should be set based on the expected commands from GPT-4o, and the corresponding methods should be called on the KarelPupper object.
         pass
 
 def main(args=None):

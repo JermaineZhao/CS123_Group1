@@ -9,7 +9,7 @@ class CommandLinePublisher(Node):
         # Create a publisher for the user query topic
         self.publisher_ = self.create_publisher(
             String,
-            'user_query_topic',  # Replace with the topic name used in your GPT-4 node
+            'user_query_topic',  # Replace with the topic name used in your GPT-4o node
             10
         )
         self.get_logger().info('Command Line Publisher Node has started.')
@@ -34,7 +34,7 @@ def main(args=None):
     try:
         while rclpy.ok():
             # Get input from the user
-            user_input = input("Enter a command for GPT-4: ")
+            user_input = input("Enter a command for GPT-4o: ")
 
             # Publish the input
             if user_input.lower() == 'exit':

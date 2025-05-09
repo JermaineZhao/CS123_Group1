@@ -20,7 +20,7 @@ class CommandLinePublisher(Node):
         # Create a publisher for the user query topic
         self.publisher_ = self.create_publisher(
             String,
-            'user_query_topic',  # Replace with the topic name used in your GPT-4 node
+            'user_query_topic',  # Replace with the topic name used in your GPT-4o node
             10
         )
         self.get_logger().info('Command Line Publisher Node has started.')
