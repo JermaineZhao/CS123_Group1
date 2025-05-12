@@ -50,6 +50,7 @@ class GPT4ConversationNode(Node):
         try:
             # Making the API call to GPT-4o using OpenAI's Python client
             prompt = "TODO"
+            self.get_logger().info(f"Initial Prompt: {prompt}")
             response = client.chat.completions.create(model="gpt-4o",  # Model identifier, assuming GPT-4o is used
             messages=[
                 {"role": "system", "content": prompt},
