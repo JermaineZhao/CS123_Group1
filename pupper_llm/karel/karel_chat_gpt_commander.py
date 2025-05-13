@@ -5,7 +5,7 @@ import pyttsx3
 from openai import OpenAI
 import karel  # Importing your KarelPupper API
 
-client = OpenAI(api_key='TODO')  # Set your OpenAI API key here
+client = OpenAI(api_key='')
 
 class GPT4ConversationNode(Node):
     def __init__(self):
@@ -40,7 +40,15 @@ class GPT4ConversationNode(Node):
     def query_callback(self, msg):
         pass
         # Paste in your implementation from simple_gpt_chat.py
-        
+         def query_callback(self, msg):
+        # Extract the user query from the message using the data attribute of message
+        user_query = msg.data
+        # Call GPT-4o API to get the response. Use the get_gpt4_response method and pass in the query
+        response = self.get_gpt4_response(user_query)
+        # Publish the response (as the data to a String message) using self.publisher_ and its publish method, 
+        response_msg = String()
+        response_msg.data = response
+        self.publisher_.publish(response_msg)
         # Play the response through the speaker with the play_response method
         self.play_response(response)
         # Parse and execute robot commands if present with the execute_robot_command method
@@ -49,7 +57,7 @@ class GPT4ConversationNode(Node):
     def get_gpt4_response(self, query):
         try:
             # Making the API call to GPT-4o using OpenAI's Python client
-            prompt = "TODO"
+            prompt = "You are a robot assistant for a small quadruped robot called Pupper. Based on the user’s natural language input, respond with a single command that the robot can understand. The command should be one of: 'walk forward', 'walk backward', 'turn left', 'turn right', 'sit', 'stand', or 'stop'. Only return the command in lowercase."
             self.get_logger().info(f"Initial Prompt: {prompt}")
             response = client.chat.completions.create(model="gpt-4o",  # Model identifier, assuming GPT-4o is used
             messages=[
@@ -79,7 +87,22 @@ class GPT4ConversationNode(Node):
         response = response.lower()
         self.get_logger().info(f"Response: {response}")
         # TODO: Implement the robot command execution logic, in a large if-else statement. Your conditionals should be set based on the expected commands from GPT-4o, and the corresponding methods should be called on the KarelPupper object.
-        pass
+        if response == "walk forward":
+            self.pupper.walk_forward()
+        elif response == "walk backward":
+            self.pupper.walk_backward()
+        elif response == "turn left":
+            self.pupper.turn_left()
+        elif response == "turn right":
+            self.pupper.turn_right()
+        elif response == "sit":
+            self.pupper.sit()
+        elif response == "stand":
+            self.pupper.stand()
+        elif response == "stop":
+            self.pupper.stop()
+        else:
+            self.get_logger().warn(f"Unrecognized command: {response}")
 
 def main(args=None):
     rclpy.init(args=args)
