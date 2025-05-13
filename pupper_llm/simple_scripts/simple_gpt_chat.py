@@ -3,8 +3,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from openai import OpenAI
 
-client = OpenAI(api_key='TODO')
-
+client = OpenAI(api_key='')
 class GPT4ConversationNode(Node):
     def __init__(self):
         super().__init__('gpt4_conversation_node')
@@ -33,22 +32,24 @@ class GPT4ConversationNode(Node):
     def query_callback(self, msg):
         pass
         # Extract the user query from the message using the data attribute of message
-        
+        user_query = msg.data
         # Call GPT-4o API to get the response. Use the get_gpt4_response method and pass in the query
-
+        response = self.get_gpt4_response(user_query)
         # Publish the response (as the data to a String message) using self.publisher_ and its publish method, 
-
+        response_msg = String()
+        response_msg.data = response
+        self.publisher_.publish(response_msg)
         # Publish the response to the ROS2 topic
         
         # DEBUG LOGGERS: Uncomment the following line to print the query and response (you may have to change the variable names)
         
-        # self.get_logger().info(f"Received user query: {user_query}") 
-        # self.get_logger().info(f"Published GPT-4o response: {response}")
+        self.get_logger().info(f"Received user query: {user_query}") 
+        self.get_logger().info(f"Published GPT-4o response: {response}")
 
     def get_gpt4_response(self, query):
         try:
             # Making the API call to GPT-4o using OpenAI's Python client
-            prompt = "TODO"
+            prompt = "You are a helpful assistant for answering user questions from a robot interface. Respond clearly and concisely."
             self.get_logger().info(f"Initial Prompt: {prompt}")
             response = client.chat.completions.create(model="gpt-4o",  # Model identifier, assuming GPT-4o is used
             messages=[

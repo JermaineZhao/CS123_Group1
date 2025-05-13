@@ -19,9 +19,12 @@ class CommandLinePublisher(Node):
     def publish_message(self, message):
         pass
         # Create a String message and publish it with the message as the data
+        msg = String()
+        msg.data = message
+        self.publisher_.publish(msg)
 
         # DEBUG LOGGER: Uncomment the following line to print the message (you may have to change the variable name)
-        # self.get_logger().info(f"Published message: {message}")
+        self.get_logger().info(f"Published message: {message}")
 
 
 def main(args=None):
